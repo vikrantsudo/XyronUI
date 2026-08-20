@@ -13,7 +13,6 @@ function XyronUI.CreateWindow(config)
 	local titleText = config.Title or "XYRONHUB"
 	local defaultTab = config.DefaultTab or "Info"
 
-	-- Clean up existing UI
 	if playerGui:FindFirstChild("XyronHubGui") then
 		playerGui.XyronHubGui:Destroy()
 	end
@@ -113,7 +112,7 @@ function XyronUI.CreateWindow(config)
 	dragCorner.CornerRadius = UDim.new(0, 6)
 	dragCorner.Parent = dragButton
 
-	-- Uptime engine
+	-- Uptime counter
 	local startTime = os.time()
 	task.spawn(function()
 		while screenGui and screenGui.Parent do
@@ -170,7 +169,6 @@ function XyronUI.CreateWindow(config)
 		end
 	end)
 
-	-- Window Instance Object
 	local Window = {
 		ScreenGui = screenGui,
 		MainFrame = mainFrame,
@@ -180,7 +178,6 @@ function XyronUI.CreateWindow(config)
 		OrderCounter = 0
 	}
 
-	-- Minimize & Close actions
 	local isMinimized = false
 	minimizeButton.MouseButton1Click:Connect(function()
 		isMinimized = not isMinimized
@@ -203,7 +200,6 @@ function XyronUI.CreateWindow(config)
 
 	function Window:CreateTab(name)
 		Window.OrderCounter += 1
-		local tabIndex = Window.OrderCounter
 
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "TabBtn_" .. name
@@ -245,7 +241,6 @@ function XyronUI.CreateWindow(config)
 
 		Window.Tabs[name] = Tab
 
-		-- Recalculate tab button sizes dynamically based on tab count
 		local totalTabs = Window.OrderCounter
 		local btnWidth = (1 / totalTabs) - 0.02
 		local count = 0
@@ -274,7 +269,7 @@ function XyronUI.CreateWindow(config)
 		end
 
 		----------------------------------------------------
-		-- TAB COMPONENTS
+		-- ALL BUILT-IN COMPONENTS
 		----------------------------------------------------
 		function Tab:AddHeader(text)
 			Tab.ElementOrder += 1
@@ -382,6 +377,157 @@ function XyronUI.CreateWindow(config)
 			end)
 		end
 
+		function Tab:AddSlider(text, min, max, default, callback)
+			Tab.ElementOrder += 1
+			
+			local frame = Instance.new("Frame")
+			frame.Size = UDim2.new(1, 0, 0, 45)
+			frame.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+			frame.LayoutOrder = Tab.ElementOrder
+			frame.Parent = tabFrame
+
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = frame
+
+			local stroke = Instance.new("UIStroke")
+			stroke.Color = Color3.fromRGB(38, 38, 48)
+			stroke.Thickness = 1
+			stroke.Parent = frame
+
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.new(1, -20, 0, 20)
+			label.Position = UDim2.new(0, 10, 0, 4)
+			label.BackgroundTransparency = 1
+			label.Text = text .. ": " .. tostring(default)
+			label.TextColor3 = Color3.fromRGB(200, 200, 215)
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Font = Enum.Font.SourceSansSemibold
+			label.TextSize = 13
+			label.Parent = frame
+
+			local sliderBack = Instance.new("Frame")
+			sliderBack.Size = UDim2.new(1, -20, 0, 6)
+			sliderBack.Position = UDim2.new(0, 10, 0, 28)
+			sliderBack.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+			sliderBack.BorderSizePixel = 0
+			sliderBack.Parent = frame
+
+			local backCorner = Instance.new("UICorner")
+			backCorner.CornerRadius = UDim.new(1, 0)
+			backCorner.Parent = sliderBack
+
+			local sliderFill = Instance.new("Frame")
+			sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+			sliderFill.BackgroundColor3 = Color3.fromRGB(235, 75, 85)
+			sliderFill.BorderSizePixel = 0
+			sliderFill.Parent = sliderBack
+
+			local fillCorner = Instance.new("UICorner")
+			fillCorner.CornerRadius = UDim.new(1, 0)
+			fillCorner.Parent = sliderFill
+
+			local isDragging = false
+			local function update(input)
+				local pos = math.clamp((input.Position.X - sliderBack.AbsolutePosition.X) / sliderBack.AbsoluteSize.X, 0, 1)
+				local val = math.floor(min + (max - min) * pos)
+				sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+				label.Text = text .. ": " .. tostring(val)
+				if callback then callback(val) end
+			end
+
+			sliderBack.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					isDragging = true
+					update(input)
+				end
+			end)
+
+			UserInputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					isDragging = false
+				end
+			end)
+
+			UserInputService.InputChanged:Connect(function(input)
+				if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+					update(input)
+				end
+			end)
+		end
+
+		function Tab:AddDropdown(text, options, callback)
+			Tab.ElementOrder += 1
+
+			local dropdownToggle = Instance.new("TextButton")
+			dropdownToggle.Size = UDim2.new(1, 0, 0, 32)
+			dropdownToggle.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+			dropdownToggle.Text = "  " .. text .. "  V"
+			dropdownToggle.TextColor3 = Color3.fromRGB(200, 200, 215)
+			dropdownToggle.TextXAlignment = Enum.TextXAlignment.Left
+			dropdownToggle.Font = Enum.Font.SourceSansSemibold
+			dropdownToggle.TextSize = 13
+			dropdownToggle.LayoutOrder = Tab.ElementOrder
+			dropdownToggle.Parent = tabFrame
+
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = dropdownToggle
+
+			local stroke = Instance.new("UIStroke")
+			stroke.Color = Color3.fromRGB(38, 38, 48)
+			stroke.Thickness = 1
+			stroke.Parent = dropdownToggle
+
+			Tab.ElementOrder += 1
+			local scrollList = Instance.new("ScrollingFrame")
+			scrollList.Size = UDim2.new(1, 0, 0, 80)
+			scrollList.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+			scrollList.BorderSizePixel = 0
+			scrollList.Visible = false
+			scrollList.ZIndex = 20
+			scrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
+			scrollList.ScrollBarThickness = 2
+			scrollList.LayoutOrder = Tab.ElementOrder
+			scrollList.Parent = tabFrame
+
+			local scrollCorner = Instance.new("UICorner")
+			scrollCorner.CornerRadius = UDim.new(0, 6)
+			scrollCorner.Parent = scrollList
+
+			local listLayoutDrop = Instance.new("UIListLayout")
+			listLayoutDrop.SortOrder = Enum.SortOrder.LayoutOrder
+			listLayoutDrop.Padding = UDim.new(0, 2)
+			listLayoutDrop.Parent = scrollList
+
+			local count = 0
+			for _, optionName in ipairs(options) do
+				count += 1
+				local optionBtn = Instance.new("TextButton")
+				optionBtn.Size = UDim2.new(1, -4, 0, 24)
+				optionBtn.BackgroundTransparency = 1
+				optionBtn.Text = "  " .. tostring(optionName)
+				optionBtn.TextColor3 = Color3.fromRGB(180, 180, 195)
+				optionBtn.TextXAlignment = Enum.TextXAlignment.Left
+				optionBtn.Font = Enum.Font.SourceSans
+				optionBtn.TextSize = 12
+				optionBtn.LayoutOrder = count
+				optionBtn.ZIndex = 21
+				optionBtn.Parent = scrollList
+
+				optionBtn.MouseButton1Click:Connect(function()
+					dropdownToggle.Text = "  " .. tostring(optionName) .. "  V"
+					scrollList.Visible = false
+					if callback then callback(optionName) end
+				end)
+			end
+			scrollList.CanvasSize = UDim2.new(0, 0, 0, count * 26)
+
+			dropdownToggle.MouseButton1Click:Connect(function()
+				scrollList.Visible = not scrollList.Visible
+			end)
+		end
+
 		function Tab:AddUserProfile()
 			Tab.ElementOrder += 1
 			local profileFrame = Instance.new("Frame")
@@ -450,39 +596,4 @@ function XyronUI.CreateWindow(config)
 			cardCorner.Parent = card
 
 			local cardStroke = Instance.new("UIStroke")
-			cardStroke.Color = Color3.fromRGB(35, 35, 45)
-			cardStroke.Thickness = 1
-			cardStroke.Parent = card
-
-			local lblTitle = Instance.new("TextLabel")
-			lblTitle.Size = UDim2.new(0.5, -10, 1, 0)
-			lblTitle.Position = UDim2.new(0, 10, 0, 0)
-			lblTitle.BackgroundTransparency = 1
-			lblTitle.Text = title
-			lblTitle.TextColor3 = Color3.fromRGB(150, 150, 165)
-			lblTitle.TextXAlignment = Enum.TextXAlignment.Left
-			lblTitle.Font = Enum.Font.SourceSans
-			lblTitle.TextSize = 12
-			lblTitle.Parent = card
-
-			local lblVal = Instance.new("TextLabel")
-			lblVal.Size = UDim2.new(0.5, -10, 1, 0)
-			lblVal.Position = UDim2.new(0.5, 0, 0, 0)
-			lblVal.BackgroundTransparency = 1
-			lblVal.Text = valueText
-			lblVal.TextColor3 = Color3.fromRGB(255, 255, 255)
-			lblVal.TextXAlignment = Enum.TextXAlignment.Right
-			lblVal.Font = Enum.Font.SourceSansBold
-			lblVal.TextSize = 12
-			lblVal.Parent = card
-
-			return lblVal
-		end
-
-		return Tab
-	end
-
-	return Window
-end
-
-return XyronUI
+			cardStroke.Co
