@@ -35,7 +35,7 @@ local COLORS = {
     Border = Color3.fromRGB(45, 45, 53),
 }
 
-local DEFAULT_LOGO = "rbxthumb://type=Asset&id=99267381304533&w=150&h=150"[cite: 1]
+local DEFAULT_LOGO = "rbxthumb://type=Asset&id=99267381304533&w=150&h=150"
 
 --==============================================================
 -- HELPERS
